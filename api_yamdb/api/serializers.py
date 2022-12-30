@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from reviews.models import Title, Genre, Category, GenreTitle
+from reviews.models import Title, Genre, Category, GenreTitle, Review
 import datetime
 from django.shortcuts import get_object_or_404
+from rest_framework.validators import UniqueTogetherValidator
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -53,7 +54,7 @@ class WriteTitleSerializer(serializers.ModelSerializer):
                     'Дата публикации не может быть в будущем')
             if year < 1895:
                 raise serializers.ValidationError(
-                    'Дата публикации не может быть раньше появления кинемотографа')
+                    'Дата публикации не может быть раньше появления кино')
         return attrs
 
     def validate_category(self, value):
@@ -70,3 +71,18 @@ class WriteTitleSerializer(serializers.ModelSerializer):
             GenreTitle.objects.create(
                genre=genre, title=title)
         return title
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        slug_field='username',
+        read_only=True
+    )
+
+    title = serializers.PrimaryKeyRelatedField(
+        read_only=True
+    )
+
+    class Meta:
+        fields = '__all__'
+        model = Review
