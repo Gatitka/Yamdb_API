@@ -1,10 +1,15 @@
 from django.contrib import admin
 
 
-from .models import Titles, Category, Ganre, GanreTitles
+from .models import Title, Category, Genre, GenreTitle
 
 
-admin.site.register(Titles)
+@admin.register(Title)
+class TitleAdmin(admin.ModelAdmin):
+    """Настройки отображения данных таблицы TITLES."""
+    list_display = ('pk', 'name', 'year', 'description', 'category')
+
+
 admin.site.register(Category)
-admin.site.register(Ganre)
-admin.site.register(GanreTitles)
+admin.site.register(Genre)
+admin.site.register(GenreTitle)
