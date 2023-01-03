@@ -74,10 +74,6 @@ class WriteTitleSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        slug_field='username',
-        read_only=True
-    )
 
     title = serializers.PrimaryKeyRelatedField(
         read_only=True

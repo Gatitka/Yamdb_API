@@ -4,6 +4,9 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+CHOICES = (1, 2, 3, 4, 5)
+
+
 class Category(models.Model):
     """ Категории (типы) произведений («Фильмы», «Книги», «Музыка»).
     Одно произведение может быть привязано только к одной категории."""
@@ -54,10 +57,10 @@ class GenreTitle(models.Model):
 
 
 class Review(models.Model):
-    author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='reviews')
+    author = models.IntegerField(default=1)
     title = models.ForeignKey(
         Title, on_delete=models.CASCADE, related_name='reviews')
     text = models.TextField()
     pub_date = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True)
+    score = models.IntegerField()

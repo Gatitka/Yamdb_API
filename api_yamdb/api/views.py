@@ -64,4 +64,4 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
-        serializer.save(title=title, author=self.request.user)
+        serializer.save(title=title)
