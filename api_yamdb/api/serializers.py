@@ -1,7 +1,13 @@
-from rest_framework import serializers
-from reviews.models import Title, Genre, Category, GenreTitle
 import datetime
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
+from rest_framework import serializers, validators
+from rest_framework_simplejwt.serializers import TokenObtainSerializer
+from reviews.models import Category, Genre, GenreTitle, Title
+
+User = get_user_model()
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -53,7 +59,8 @@ class WriteTitleSerializer(serializers.ModelSerializer):
                     'Дата публикации не может быть в будущем')
             if year < 1895:
                 raise serializers.ValidationError(
-                    'Дата публикации не может быть раньше появления кинемотографа')
+                    'Дата публикации не может быть '
+                    'раньше появления кинематографа')
         return attrs
 
     def validate_category(self, value):
@@ -68,5 +75,63 @@ class WriteTitleSerializer(serializers.ModelSerializer):
         for genre in genres:
             genre = get_object_or_404(Genre, slug=genre)
             GenreTitle.objects.create(
-               genre=genre, title=title)
+                genre=genre, title=title)
         return title
+
+
+class UserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(max_length=254, required=True)
+    username = serializers.CharField(max_length=150, required=True)
+
+    class Meta:
+        fields = ['__all__']
+        model = User
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                "Пользователь с таким email уже существует.")
+        return value
+
+    def validate_username(self, value):
+        if value.lower() == 'me':
+            raise serializers.ValidationError(
+                "Использовать имя 'me' в качестве username запрещено.")
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError(
+                "Пользователь с таким username уже существует.")
+        return value
+
+
+class SignUpSerializer(UserSerializer):
+
+    class Meta:
+        fields = ['email', 'username']
+        model = User
+
+
+class MyTokenObtainSerializer(TokenObtainSerializer):
+    def __init__(self, *args, **kwargs):
+        serializers.Serializer.__init__(self, *args, **kwargs)
+
+        self.fields['username'] = serializers.CharField(max_length=150)
+        self.fields['confirmation_code'] = serializers.CharField()
+
+    def validate(self, data):
+        try:
+            self.user = User.objects.get(username=data['username'])
+        except User.DoesNotExist:
+            raise serializers.ValidationError(
+                "Пользователя с таким username не существует.")
+
+        confirmation_code = data['confirmation_code']
+        if not default_token_generator.check_token(
+            user=self.user,
+            token=confirmation_code
+        ):
+            raise serializers.ValidationError(
+                "Недействительный код подтверждения.")
+
+        data = {"token": str(self.get_token(self.user))}
+
+        return data

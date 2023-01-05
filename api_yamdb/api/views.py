@@ -1,15 +1,22 @@
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, viewsets
-from reviews.models import Category, Genre, Title
+from rest_framework import filters, generics, mixins, permissions, viewsets
 from rest_framework.pagination import PageNumberPagination
-from .serializers import (CategorySerializer, GenreSerializer, TitleSerializer,
-                          WriteTitleSerializer)
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.views import TokenObtainPairView
+from reviews.models import Category, Genre, Title
+from users.models import User
+
 from .filters import TitleFilter
+from .serializers import (CategorySerializer, GenreSerializer,
+                          MyTokenObtainSerializer, SignUpSerializer,
+                          TitleSerializer, WriteTitleSerializer)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
-    # permission_classes = None
+    permission_classes = [IsAuthenticated]
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend, )
     filterset_class = TitleFilter
@@ -52,3 +59,29 @@ class GenreCreateDestroyListViewSet(mixins.CreateModelMixin,
 
     def delete(self, request, *args, **kwargs):
         return self.destroy(request, *args, **kwargs)
+
+
+class SignUpView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = SignUpSerializer
+    permission_classes = [AllowAny]
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+
+        username = serializer.validated_data.get('username')
+        email = serializer.validated_data.get('email')
+        confirmation_code = default_token_generator.make_token(user=user)
+        subject = "You're signed up on YaMDB!"
+        message = (f'Hello, {username}!\n'
+                   f'Your confirmation code to receive a token is: '
+                   f'{confirmation_code}')
+        from_email = 'hello@yamdb.ru'
+        recepient_list = [email, ]
+
+        send_mail(subject, message, from_email, recepient_list)
+
+
+class TokenObtainView(TokenObtainPairView):
+    permission_classes = [AllowAny]
+    serializer_class = MyTokenObtainSerializer
