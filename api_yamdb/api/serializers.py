@@ -3,8 +3,9 @@ import datetime
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
-from rest_framework import serializers, validators
+from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
+from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import Category, Genre, GenreTitle, Title
 
 User = get_user_model()
@@ -84,22 +85,33 @@ class UserSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=150, required=True)
 
     class Meta:
-        fields = ['__all__']
+        fields = [
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'role'
+        ]
         model = User
 
+    """
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError(
                 "Пользователь с таким email уже существует.")
         return value
+    """
 
     def validate_username(self, value):
         if value.lower() == 'me':
             raise serializers.ValidationError(
                 "Использовать имя 'me' в качестве username запрещено.")
+        """
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError(
                 "Пользователь с таким username уже существует.")
+        """
         return value
 
 
@@ -109,8 +121,14 @@ class SignUpSerializer(UserSerializer):
         fields = ['email', 'username']
         model = User
 
+    def create(self, validated_data):
+        user, status = User.objects.get_or_create(**validated_data)
+        return user
+
 
 class MyTokenObtainSerializer(TokenObtainSerializer):
+    token_class = AccessToken
+
     def __init__(self, *args, **kwargs):
         serializers.Serializer.__init__(self, *args, **kwargs)
 
