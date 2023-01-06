@@ -127,6 +127,9 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
+# Password reset token (confirmation code) is valid for 1 day.
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24
+
 AUTH_USER_MODEL = 'users.User'
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
