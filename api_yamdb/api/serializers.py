@@ -81,8 +81,14 @@ class WriteTitleSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(max_length=254, required=True)
-    username = serializers.CharField(max_length=150, required=True)
+    email = serializers.EmailField(
+        max_length=254,
+        required=True
+    )
+    username = serializers.CharField(
+        max_length=150,
+        required=True
+    )
 
     class Meta:
         fields = [
@@ -95,23 +101,10 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         model = User
 
-    """
-    def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError(
-                "Пользователь с таким email уже существует.")
-        return value
-    """
-
     def validate_username(self, value):
         if value.lower() == 'me':
             raise serializers.ValidationError(
                 "Использовать имя 'me' в качестве username запрещено.")
-        """
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError(
-                "Пользователь с таким username уже существует.")
-        """
         return value
 
 
