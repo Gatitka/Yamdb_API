@@ -1,13 +1,17 @@
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, viewsets
-from reviews.models import Category, Genre, Title, Review
 from rest_framework.pagination import PageNumberPagination
-from .serializers import (CategorySerializer, GenreSerializer, TitleSerializer,
-                          WriteTitleSerializer, ReviewSerializer)
+from reviews.models import Category, Genre, Review, Title, Comment
+
 from .filters import TitleFilter
-from django.shortcuts import get_object_or_404
+from .serializers import (CategorySerializer, GenreSerializer,
+                          ReviewSerializer, TitleSerializer,
+                          WriteTitleSerializer, CommentSerializer)
+
 
 class TitleViewSet(viewsets.ModelViewSet):
+    """ Вьюсет модели Title, сериализатор подбирается по типу запроса."""
     queryset = Title.objects.all()
     # permission_classes = None
     pagination_class = PageNumberPagination
@@ -19,12 +23,18 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleSerializer
         return WriteTitleSerializer
 
+    # def create(self, request, *args, **kwargs):
+    #     serializer = self.get_serializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     self.perform_create(serializer)
+    #     return Response(TitleSerializer(serializer.instance), status=status.HTTP_201_CREATED)
+
 
 class CategoryCreateDestroyListViewSet(mixins.CreateModelMixin,
                                        mixins.DestroyModelMixin,
                                        mixins.ListModelMixin,
                                        viewsets.GenericViewSet):
-
+    """ Вьюсет модели Category."""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     lookup_field = 'slug'
@@ -41,7 +51,7 @@ class GenreCreateDestroyListViewSet(mixins.CreateModelMixin,
                                     mixins.DestroyModelMixin,
                                     mixins.ListModelMixin,
                                     viewsets.GenericViewSet):
-
+    """ Вьюсет модели Genre."""
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     lookup_field = 'slug'
@@ -55,8 +65,9 @@ class GenreCreateDestroyListViewSet(mixins.CreateModelMixin,
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
+    """ Вьюсет модели Review."""
     serializer_class = ReviewSerializer
-    # permission_classes = (AuthorOrReadOnlyAnon,)
+    # permission_classes = None
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
@@ -65,3 +76,22 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
         serializer.save(title=title)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    """ Вьюсет модели Comment."""
+    serializer_class = CommentSerializer
+    # permission_classes = None
+
+    def get_queryset(self):
+        title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
+        review = get_object_or_404(Review, pk=self.kwargs.get("review_id"))
+        return Comment.objects.filter(
+            review__title=title.id,
+            review=review.id
+            ).all()
+
+    def perform_create(self, serializer):
+        title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
+        review = get_object_or_404(Review, pk=self.kwargs.get("review_id"))
+        serializer.save(review=review)

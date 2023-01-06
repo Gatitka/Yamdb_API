@@ -1,10 +1,7 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 
 User = get_user_model()
-
-
-CHOICES = (1, 2, 3, 4, 5)
 
 
 class Category(models.Model):
@@ -39,9 +36,6 @@ class Title(models.Model):
         null=True,
         blank=True)
     genre = models.ManyToManyField(Genre, through='GenreTitle')
-    # rating = models.IntegerField() подумать, возможно это поле сделать
-    # лишь в сериализаторе - как часто выводится, чтобы не прописывать в
-    # несокльких сериализаторах
 
     def __str__(self):
         return self.name
@@ -57,10 +51,25 @@ class GenreTitle(models.Model):
 
 
 class Review(models.Model):
-    author = models.IntegerField(default=1)
+    """ Отзывы на произведения."""
+    author = models.IntegerField()
+    # author = models.ForeignKey(
+    #     User, on_delete=models.CASCADE, related_name='reviews')
     title = models.ForeignKey(
         Title, on_delete=models.CASCADE, related_name='reviews')
     text = models.TextField()
     pub_date = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True)
     score = models.IntegerField()
+
+
+class Comment(models.Model):
+    """ Комментарии к отзывам."""
+    author = models.IntegerField()
+    # author = models.ForeignKey(
+    #     User, on_delete=models.CASCADE, related_name='comments')
+    review = models.ForeignKey(
+        Review, on_delete=models.CASCADE, related_name='comments')
+    text = models.TextField()
+    pub_date = models.DateTimeField(
+        'Дата добавления', auto_now_add=True, db_index=True)
