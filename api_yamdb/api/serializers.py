@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from rest_framework.exceptions import NotFound
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
 from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import Category, Genre, GenreTitle, Title
@@ -81,14 +82,6 @@ class WriteTitleSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(
-        max_length=254,
-        required=True
-    )
-    username = serializers.CharField(
-        max_length=150,
-        required=True
-    )
 
     class Meta:
         fields = [
@@ -114,13 +107,11 @@ class SignUpSerializer(UserSerializer):
         fields = ['email', 'username']
         model = User
 
-    def create(self, validated_data):
-        user, status = User.objects.get_or_create(**validated_data)
-        return user
-
 
 class MyTokenObtainSerializer(TokenObtainSerializer):
     token_class = AccessToken
+    username = serializers.RegexField(regex=r'^[\w.@+-]+$', max_length=150)
+    confirmation_code = serializers.CharField()
 
     def __init__(self, *args, **kwargs):
         serializers.Serializer.__init__(self, *args, **kwargs)
@@ -132,8 +123,7 @@ class MyTokenObtainSerializer(TokenObtainSerializer):
         try:
             self.user = User.objects.get(username=data['username'])
         except User.DoesNotExist:
-            raise serializers.ValidationError(
-                "Пользователя с таким username не существует.")
+            raise NotFound("Пользователя с таким username не существует.")
 
         confirmation_code = data['confirmation_code']
         if not default_token_generator.check_token(

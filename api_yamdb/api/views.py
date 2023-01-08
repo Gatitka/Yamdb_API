@@ -84,10 +84,24 @@ class SignUpView(generics.CreateAPIView):
     serializer_class = SignUpSerializer
     permission_classes = [AllowAny]
 
-    def perform_create(self, serializer):
-        user = serializer.save()
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        user = None
+        if not serializer.is_valid():
+            try:
+                user = User.objects.get(
+                    username__iexact=serializer.initial_data.get('username'),
+                    email__iexact=serializer.initial_data.get('email')
+                )
+            except User.DoesNotExist:
+                return Response(
+                    serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not user:
+            user = serializer.save()
         confirmation_code = default_token_generator.make_token(user=user)
         send_confirmation_code(user, confirmation_code)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TokenObtainView(TokenObtainPairView):
