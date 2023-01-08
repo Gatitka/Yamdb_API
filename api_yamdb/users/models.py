@@ -9,6 +9,7 @@ class UserRoles(models.TextChoices):
 
 
 class User(AbstractUser):
+    email = models.EmailField(max_length=254, unique=True)
     bio = models.TextField(
         'О себе',
         blank=True
