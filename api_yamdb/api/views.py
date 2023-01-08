@@ -14,8 +14,8 @@ from .filters import TitleFilter
 from .permissions import IsAdmin, IsAdminOrReadOnly
 from .serializers import (CategorySerializer, GenreSerializer,
                           MyTokenObtainSerializer, SignUpSerializer,
-                          TitleSerializer, UserSerializer,
-                          WriteTitleSerializer)
+                          TitleSerializer, UserProfileSerializer,
+                          UserSerializer, WriteTitleSerializer)
 
 User = get_user_model()
 
@@ -110,13 +110,14 @@ class TokenObtainView(TokenObtainPairView):
 
 
 class UsersViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.all().order_by('username')
     serializer_class = UserSerializer
     lookup_field = 'username'
     permission_classes = [IsAdmin]
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_instance(self):
         return self.request.user
@@ -124,10 +125,12 @@ class UsersViewSet(viewsets.ModelViewSet):
     @action(
         detail=False,
         methods=['get', 'patch'],
+        serializer_class=UserProfileSerializer,
         permission_classes=[IsAuthenticated],
         url_path='me'
     )
     def user_profile(self, request):
+        print(request.method)
         self.get_object = self.get_instance
         if request.method == "GET":
             return self.retrieve(request)

@@ -97,7 +97,7 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_username(self, value):
         if value.lower() == 'me':
             raise serializers.ValidationError(
-                "Использовать имя 'me' в качестве username запрещено.")
+                "Использовать 'me' в качестве username запрещено.")
         return value
 
 
@@ -106,6 +106,12 @@ class SignUpSerializer(UserSerializer):
     class Meta:
         fields = ['email', 'username']
         model = User
+
+
+class UserProfileSerializer(UserSerializer):
+
+    class Meta(UserSerializer.Meta):
+        read_only_fields = ['role']
 
 
 class MyTokenObtainSerializer(TokenObtainSerializer):
