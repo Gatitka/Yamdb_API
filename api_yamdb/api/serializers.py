@@ -1,9 +1,80 @@
 import datetime
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from rest_framework.exceptions import NotFound
+from rest_framework_simplejwt.serializers import TokenObtainSerializer
+from rest_framework_simplejwt.tokens import AccessToken
+
+User = get_user_model()
+
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from reviews.models import Category, Genre, GenreTitle, Review, Title, Comment
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = [
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'role'
+        ]
+        model = User
+
+    def validate_username(self, value):
+        if value.lower() == 'me':
+            raise serializers.ValidationError(
+                "Использовать 'me' в качестве username запрещено.")
+        return value
+
+
+class SignUpSerializer(UserSerializer):
+
+    class Meta:
+        fields = ['email', 'username']
+        model = User
+
+
+class UserProfileSerializer(UserSerializer):
+
+    class Meta(UserSerializer.Meta):
+        read_only_fields = ['role']
+
+
+class MyTokenObtainSerializer(TokenObtainSerializer):
+    token_class = AccessToken
+    username = serializers.RegexField(regex=r'^[\w.@+-]+$', max_length=150)
+    confirmation_code = serializers.CharField()
+
+    def __init__(self, *args, **kwargs):
+        serializers.Serializer.__init__(self, *args, **kwargs)
+
+        self.fields['username'] = serializers.CharField(max_length=150)
+        self.fields['confirmation_code'] = serializers.CharField()
+
+    def validate(self, data):
+        try:
+            self.user = User.objects.get(username=data['username'])
+        except User.DoesNotExist:
+            raise NotFound("Пользователя с таким username не существует.")
+
+        confirmation_code = data['confirmation_code']
+        if not default_token_generator.check_token(
+            user=self.user,
+            token=confirmation_code
+        ):
+            raise serializers.ValidationError(
+                "Недействительный код подтверждения.")
+
+        data = {"token": str(self.get_token(self.user))}
+
+        return data
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -64,7 +135,8 @@ class WriteTitleSerializer(TitleSerializer):
                     'Дата публикации не может быть в будущем')
             if year < 1895:
                 raise serializers.ValidationError(
-                    'Дата публикации не может быть раньше появления кино')
+                    'Дата публикации не может быть '
+                    'раньше появления кинематографа')
         return attrs
 
     def validate_category(self, value):
@@ -79,7 +151,7 @@ class WriteTitleSerializer(TitleSerializer):
         for genre in genres:
             genre = get_object_or_404(Genre, slug=genre)
             GenreTitle.objects.create(
-               genre=genre, title=title)
+                genre=genre, title=title)
         return title
 
     def to_representation(self, value):

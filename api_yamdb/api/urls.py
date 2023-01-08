@@ -1,12 +1,17 @@
-from api.views import (TitleViewSet, CategoryCreateDestroyListViewSet,
-                       GenreCreateDestroyListViewSet, ReviewViewSet,
-                       CommentViewSet)
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
+from api.views import (CategoryCreateDestroyListViewSet,
+                       GenreCreateDestroyListViewSet, SignUpView,
+                       TitleViewSet, TokenObtainView,
+                       UsersViewSet, ReviewViewSet,
+                       CommentViewSet)
 
 app_name = 'api'
 
 v1_router = DefaultRouter()
+
+v1_router.register('users', UsersViewSet)
 v1_router.register('titles', TitleViewSet,
                    basename='titles')
 v1_router.register('categories', CategoryCreateDestroyListViewSet,
@@ -23,4 +28,6 @@ v1_router.register(
 
 urlpatterns = [
     path('', include(v1_router.urls)),
+    path('auth/signup/', SignUpView.as_view(), name='signup'),
+    path('auth/token/', TokenObtainView.as_view(), name='token_create')
 ]
