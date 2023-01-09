@@ -12,7 +12,7 @@ from reviews.models import Category, Genre, Review, Title, Comment
 from django.shortcuts import get_object_or_404
 
 from .filters import TitleFilter
-from .permissions import IsAdmin, IsAdminOrReadOnly
+from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorAdminModerOrReadOnly
 from .serializers import (CategorySerializer, GenreSerializer,
                           MyTokenObtainSerializer, SignUpSerializer,
                           TitleSerializer, UserProfileSerializer,
@@ -86,7 +86,6 @@ class UsersViewSet(viewsets.ModelViewSet):
         url_path='me'
     )
     def user_profile(self, request):
-        print(request.method)
         self.get_object = self.get_instance
         if request.method == "GET":
             return self.retrieve(request)
@@ -150,7 +149,7 @@ class GenreCreateDestroyListViewSet(mixins.CreateModelMixin,
 class ReviewViewSet(viewsets.ModelViewSet):
     """ Вьюсет модели Review."""
     serializer_class = ReviewSerializer
-    # permission_classes = None
+    permission_classes = [IsAuthorAdminModerOrReadOnly]
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
@@ -164,7 +163,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     """ Вьюсет модели Comment."""
     serializer_class = CommentSerializer
-    # permission_classes = None
+    permission_classes = [IsAuthorAdminModerOrReadOnly]
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))

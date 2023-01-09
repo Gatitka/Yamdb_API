@@ -1,6 +1,17 @@
 from rest_framework import permissions
 
 
+class IsAdmin(permissions.BasePermission):
+    """
+    Выполнение запросов запрещено для всех, кроме пользователей
+    с ролью 'admin' или суперюзеров.
+    """
+    def has_permission(self, request, view):
+        if request.auth:
+            return request.user.role == 'admin' or request.user.is_superuser
+        return False
+
+
 class IsAdminOrReadOnly(permissions.BasePermission):
     """
     Методы GET, HEAD и OPTIONS доступны для всех пользователей (и анонимов).
@@ -11,17 +22,23 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        if request.auth:
-            return request.user.role == 'admin' or request.user.is_superuser
+        if IsAdmin.has_permission(request, view):
+            return True
         return False
 
 
-class IsAdmin(permissions.BasePermission):
+class IsAuthorAdminModerOrReadOnly(permissions.IsAuthenticatedOrReadOnly):
     """
-    Выполнение запросов запрещено для всех, кроме пользователей
-    с ролью 'admin' или суперюзеров.
+    Без авторизации доступны только запросы на чтение, для создания новой
+    записи пользователь должен быть авторизован.
+    Редактировать или удалять записи может только их автор или
+    админ с модератором.
     """
-    def has_permission(self, request, view):
-        if request.auth:
-            return request.user.role == 'admin' or request.user.is_superuser
+    def has_object_permission(self, request, view, obj):
+        if obj.author == request.user:
+            return True
+        if IsAdmin.has_permission(request, view):
+            return True
+        if request.user.role == 'moderator':
+            return True
         return False
