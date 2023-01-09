@@ -11,7 +11,7 @@ User = get_user_model()
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from reviews.models import Category, Genre, GenreTitle, Review, Title, Comment
+from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -108,7 +108,7 @@ class TitleSerializer(serializers.ModelSerializer):
                 title=obj.id
                 ).aggregate(Avg('score'))['score__avg']
             return round(avg_score)
-        return 0
+        return None
 
 
 class WriteTitleSerializer(TitleSerializer):
@@ -162,11 +162,11 @@ class WriteTitleSerializer(TitleSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     """ Сериализатор для отзывов. Валидация: 1 отзыв на 1 произведение.
     Валидация оценки произведению 0-10"""
-    # author = serializers.SlugRelatedField(
-    #     default=serializers.CurrentUserDefault(),
-    #     slug_field='username',
-    #     read_only=True
-    # )
+    author = serializers.SlugRelatedField(
+        default=serializers.CurrentUserDefault(),
+        slug_field='username',
+        read_only=True
+    )
 
     class Meta:
         fields = ('id', 'text', 'author', 'pub_date', 'score')
@@ -177,7 +177,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         kwargs = request.parser_context['kwargs']
         title_id = kwargs['title_id']
 
-        if Review.objects.filter(author=data['author'], title=title_id):
+        if Review.objects.filter(author=request.user, title=title_id):
             raise serializers.ValidationError(
                 f'Пользователь может добавить лишь один отзыв на произведение.'
             )
@@ -191,11 +191,11 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     """ Сериализаторя для комментариев к отзывам."""
-    # author = serializers.SlugRelatedField(
-    #     default=serializers.CurrentUserDefault(),
-    #     slug_field='username',
-    #     read_only=True
-    # )
+    author = serializers.SlugRelatedField(
+        default=serializers.CurrentUserDefault(),
+        slug_field='username',
+        read_only=True
+    )
 
     class Meta:
         fields = ('id', 'text', 'author', 'pub_date')
