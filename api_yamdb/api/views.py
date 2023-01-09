@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
@@ -9,7 +10,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from reviews.models import Category, Comment, Genre, Review, Title
-from users.models import User
 
 from .filters import TitleFilter
 from .permissions import IsAdmin, IsAdminOrReadOnly
@@ -17,7 +17,9 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, MyTokenObtainSerializer,
                           ReviewSerializer, SignUpSerializer, TitleSerializer,
                           UserProfileSerializer, UserSerializer,
-                          WriteTitleSerializer)
+                          WriteReviewSerializer, WriteTitleSerializer)
+
+User = get_user_model()
 
 
 def send_confirmation_code(user, confirmation_code):
@@ -139,13 +141,19 @@ class GenreCreateDestroyListViewSet(mixins.CreateModelMixin,
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    """ Вьюсет модели Review."""
-    serializer_class = ReviewSerializer
+    """ Вьюсет модели Review. Сериализатор подбирается по типу запроса для
+    валидации 1автор-1произведение-1отзыв при создании. В других экшенах
+    этой валидации нет."""
     # permission_classes = None
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
         return title.reviews.all()
+
+    def get_serializer_class(self):
+        if self.action in ['create']:
+            return WriteReviewSerializer
+        return ReviewSerializer
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))

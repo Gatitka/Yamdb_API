@@ -1,5 +1,7 @@
+from django.contrib.auth import get_user_model
 from django.db import models
-from users.models import User
+
+User = get_user_model()
 
 
 class Category(models.Model):
@@ -58,6 +60,14 @@ class Review(models.Model):
     pub_date = models.DateTimeField(
         'Дата добавления', auto_now_add=True, db_index=True)
     score = models.IntegerField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'title'],
+                name='unique_author_title'
+            )
+        ]
 
 
 class Comment(models.Model):
