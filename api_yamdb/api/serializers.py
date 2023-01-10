@@ -2,16 +2,15 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from rest_framework.exceptions import NotFound
-from rest_framework_simplejwt.serializers import TokenObtainSerializer
-from rest_framework_simplejwt.tokens import AccessToken
-
-User = get_user_model()
-
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from reviews.models import Category, Genre, GenreTitle, Review, Title, Comment
+from rest_framework.exceptions import NotFound
+from rest_framework_simplejwt.serializers import TokenObtainSerializer
+from rest_framework_simplejwt.tokens import AccessToken
+from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
+
+User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -106,9 +105,9 @@ class TitleSerializer(serializers.ModelSerializer):
         if Review.objects.filter(title=obj.id).exists():
             avg_score = Review.objects.filter(
                 title=obj.id
-                ).aggregate(Avg('score'))['score__avg']
+            ).aggregate(Avg('score'))['score__avg']
             return round(avg_score)
-        return 0
+        return None
 
 
 class WriteTitleSerializer(TitleSerializer):
@@ -160,28 +159,18 @@ class WriteTitleSerializer(TitleSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    """ Сериализатор для отзывов. Валидация: 1 отзыв на 1 произведение.
-    Валидация оценки произведению 0-10"""
-    # author = serializers.SlugRelatedField(
-    #     default=serializers.CurrentUserDefault(),
-    #     slug_field='username',
-    #     read_only=True
-    # )
+    """ Сериализатор для чтения и редакции отзывов.
+    (НЕТ Валидации: 1 отзыв на 1 произведение)
+    Валидация оценки произведению 0-10."""
+    author = serializers.SlugRelatedField(
+        default=serializers.CurrentUserDefault(),
+        slug_field='username',
+        read_only=True
+    )
 
     class Meta:
         fields = ('id', 'text', 'author', 'pub_date', 'score')
         model = Review
-
-    def validate(self, data):
-        request = self.root.context['request']
-        kwargs = request.parser_context['kwargs']
-        title_id = kwargs['title_id']
-
-        if Review.objects.filter(author=data['author'], title=title_id):
-            raise serializers.ValidationError(
-                f'Пользователь может добавить лишь один отзыв на произведение.'
-            )
-        return data
 
     def validate_score(self, value):
         if not (0 < value <= 10):
@@ -189,13 +178,30 @@ class ReviewSerializer(serializers.ModelSerializer):
         return value
 
 
+class WriteReviewSerializer(ReviewSerializer):
+    """ Сериализатор для сохдания отзывов.
+    Валидация 1 отзыв на 1 произведение.
+    Валидация оценки произведению 0-10"""
+
+    def validate(self, data):
+        request = self.root.context['request']
+        kwargs = request.parser_context['kwargs']
+        title_id = kwargs['title_id']
+
+        if Review.objects.filter(author=request.user, title=title_id):
+            raise serializers.ValidationError(
+                'Пользователь может добавить лишь один отзыв на произведение.'
+            )
+        return data
+
+
 class CommentSerializer(serializers.ModelSerializer):
     """ Сериализаторя для комментариев к отзывам."""
-    # author = serializers.SlugRelatedField(
-    #     default=serializers.CurrentUserDefault(),
-    #     slug_field='username',
-    #     read_only=True
-    # )
+    author = serializers.SlugRelatedField(
+        default=serializers.CurrentUserDefault(),
+        slug_field='username',
+        read_only=True
+    )
 
     class Meta:
         fields = ('id', 'text', 'author', 'pub_date')

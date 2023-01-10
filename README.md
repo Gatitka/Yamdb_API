@@ -18,19 +18,19 @@ git clone https://github.com/Gatitka/api_yamdb.git
 Cоздать и активировать виртуальное окружение:
 
 ```
-python3 -m venv env
+python3 -m venv venv
 ```
 
 * Если у вас Linux/macOS
 
     ```
-    source env/bin/activate
+    source venv/bin/activate
     ```
 
 * Если у вас windows
 
     ```
-    source env/scripts/activate
+    source venv/Scripts/activate
     ```
 
 ```

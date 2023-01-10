@@ -1,6 +1,10 @@
 from rest_framework import permissions
 
 
+def check_is_admin(user):
+    return user.role == 'admin' or user.is_superuser
+
+
 class IsAdmin(permissions.BasePermission):
     """
     Выполнение запросов запрещено для всех, кроме пользователей
@@ -8,7 +12,7 @@ class IsAdmin(permissions.BasePermission):
     """
     def has_permission(self, request, view):
         if request.auth:
-            return request.user.role == 'admin' or request.user.is_superuser
+            return check_is_admin(request.user)
         return False
 
 
@@ -22,8 +26,8 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        if IsAdmin.has_permission(request, view):
-            return True
+        if request.auth:
+            return check_is_admin(request.user)
         return False
 
 
@@ -35,9 +39,11 @@ class IsAuthorAdminModerOrReadOnly(permissions.IsAuthenticatedOrReadOnly):
     админ с модератором.
     """
     def has_object_permission(self, request, view, obj):
+        if view.action == 'retrieve':
+            return True
         if obj.author == request.user:
             return True
-        if IsAdmin.has_permission(request, view):
+        if check_is_admin(request.user):
             return True
         if request.user.role == 'moderator':
             return True

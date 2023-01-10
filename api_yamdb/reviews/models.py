@@ -52,9 +52,8 @@ class GenreTitle(models.Model):
 
 class Review(models.Model):
     """ Отзывы на произведения."""
-    author = models.IntegerField()
-    # author = models.ForeignKey(
-    #     User, on_delete=models.CASCADE, related_name='reviews')
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='reviews')
     title = models.ForeignKey(
         Title, on_delete=models.CASCADE, related_name='reviews')
     text = models.TextField()
@@ -62,12 +61,19 @@ class Review(models.Model):
         'Дата добавления', auto_now_add=True, db_index=True)
     score = models.IntegerField()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'title'],
+                name='unique_author_title'
+            )
+        ]
+
 
 class Comment(models.Model):
     """ Комментарии к отзывам."""
-    author = models.IntegerField()
-    # author = models.ForeignKey(
-    #     User, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='comments')
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE, related_name='comments')
     text = models.TextField()
