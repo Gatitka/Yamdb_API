@@ -12,7 +12,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from reviews.models import Category, Comment, Genre, Review, Title
 
 from .filters import TitleFilter
-from .permissions import IsAdmin, IsAdminOrReadOnly
+
+from .permissions import (IsAdmin, IsAdminOrReadOnly,
+                          IsAuthorAdminModerOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, MyTokenObtainSerializer,
                           ReviewSerializer, SignUpSerializer, TitleSerializer,
@@ -23,6 +25,9 @@ User = get_user_model()
 
 
 def send_confirmation_code(user, confirmation_code):
+    """
+    Функция отправляет код подтверждения на электронную почту пользователя.
+    """
     subject = "You're signed up on YaMDB!"
     message = (f'Hello, {user.username}!\n'
                'Your confirmation code to receive a token is: '
@@ -35,6 +40,11 @@ def send_confirmation_code(user, confirmation_code):
 
 
 class SignUpView(generics.CreateAPIView):
+    """
+    Вью-класс для самостоятельной регистрации нового пользователя
+    и для получения кода подтверждения для пользователя,
+    зарегистрированного админом.
+    """
     queryset = User.objects.all()
     serializer_class = SignUpSerializer
     permission_classes = [AllowAny]
@@ -60,11 +70,17 @@ class SignUpView(generics.CreateAPIView):
 
 
 class TokenObtainView(TokenObtainPairView):
+    """
+    Вьюсет для получения JWT.
+    """
     serializer_class = MyTokenObtainSerializer
     permission_classes = [AllowAny]
 
 
 class UsersViewSet(viewsets.ModelViewSet):
+    """
+    Вьюсет модели User. Метод PUT недоступен.
+    """
     queryset = User.objects.all().order_by('username')
     serializer_class = UserSerializer
     lookup_field = 'username'
@@ -72,7 +88,6 @@ class UsersViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
-    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_instance(self):
         return self.request.user
@@ -85,11 +100,15 @@ class UsersViewSet(viewsets.ModelViewSet):
         url_path='me'
     )
     def user_profile(self, request):
-        print(request.method)
         self.get_object = self.get_instance
         if request.method == "GET":
             return self.retrieve(request)
         return self.partial_update(request)
+
+    def update(self, request, *args, **kwargs):
+        if request.method == "PUT":
+            return self.http_method_not_allowed(request, *args, **kwargs)
+        return super().update(request, *args, **kwargs)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -144,7 +163,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     """ Вьюсет модели Review. Сериализатор подбирается по типу запроса для
     валидации 1автор-1произведение-1отзыв при создании. В других экшенах
     этой валидации нет."""
-    # permission_classes = None
+    permission_classes = [IsAuthorAdminModerOrReadOnly]
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
@@ -163,7 +182,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     """ Вьюсет модели Comment."""
     serializer_class = CommentSerializer
-    # permission_classes = None
+    permission_classes = [IsAuthorAdminModerOrReadOnly]
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))

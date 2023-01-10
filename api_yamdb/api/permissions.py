@@ -1,12 +1,19 @@
 from rest_framework import permissions
 
 
-def check_authentication(request):
+def check_is_admin(user):
+    return user.role == 'admin' or user.is_superuser
+
+
+class IsAdmin(permissions.BasePermission):
     """
-    Вернёт True, если запрос получен от аутентифицированного пользователя,
-    иначе False.
+    Выполнение запросов запрещено для всех, кроме пользователей
+    с ролью 'admin' или суперюзеров.
     """
-    return request.user and request.user.is_authenticated
+    def has_permission(self, request, view):
+        if request.auth:
+            return check_is_admin(request.user)
+        return False
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -19,17 +26,25 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        if check_authentication(request):
-            return request.user.role == 'admin' or request.user.is_superuser
+        if request.auth:
+            return check_is_admin(request.user)
         return False
 
 
-class IsAdmin(permissions.BasePermission):
+class IsAuthorAdminModerOrReadOnly(permissions.IsAuthenticatedOrReadOnly):
     """
-    Выполнение запросов запрещено для всех, кроме пользователей
-    с ролью 'admin' или суперюзеров.
+    Без авторизации доступны только запросы на чтение, для создания новой
+    записи пользователь должен быть авторизован.
+    Редактировать или удалять записи может только их автор или
+    админ с модератором.
     """
-    def has_permission(self, request, view):
-        if check_authentication(request):
-            return request.user.role == 'admin' or request.user.is_superuser
+    def has_object_permission(self, request, view, obj):
+        if view.action == 'retrieve':
+            return True
+        if obj.author == request.user:
+            return True
+        if check_is_admin(request.user):
+            return True
+        if request.user.role == 'moderator':
+            return True
         return False
