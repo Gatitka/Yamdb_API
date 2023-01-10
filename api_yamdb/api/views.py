@@ -12,6 +12,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from reviews.models import Category, Comment, Genre, Review, Title
 
 from .filters import TitleFilter
+
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
                           IsAuthorAdminModerOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
