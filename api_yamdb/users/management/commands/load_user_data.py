@@ -14,6 +14,7 @@ class Command(BaseCommand):
         with open('./static/data/users.csv', encoding='utf-8') as f:
             for row in DictReader(f):
                 user = User(
+                    id=row['id'],
                     username=row['username'],
                     email=row['email'],
                     role=row['role'],

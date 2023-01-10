@@ -12,6 +12,7 @@ class Command(BaseCommand):
         with open('./static/data/titles.csv', encoding='utf-8') as f:
             for row in DictReader(f):
                 title = Title(
+                    id=row['id'],
                     name=row['name'],
                     year=row['year'],
                     category_id=row['category']

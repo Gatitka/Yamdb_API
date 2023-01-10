@@ -12,6 +12,7 @@ class Command(BaseCommand):
         with open('./static/data/genre.csv', encoding='utf-8') as f:
             for row in DictReader(f):
                 genre = Genre(
+                    id=row['id'],
                     name=row['name'],
                     slug=row['slug']
                 )
