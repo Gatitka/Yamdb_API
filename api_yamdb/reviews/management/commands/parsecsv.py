@@ -6,7 +6,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         commands = [
-            'load_users_data',
+            'load_user_data',
             'load_category_data',
             'load_genre_data',
             'load_title_data',
