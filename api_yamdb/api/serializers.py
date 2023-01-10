@@ -14,6 +14,13 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Базовый сериализатор для модели User.
+    Все поля, кроме bio обязательны.
+    Валидация:
+    1) проверка, что переданный username не 'me';
+    2) проверка уникальности полей email и username по БД.
+    """
 
     class Meta:
         fields = [
@@ -34,6 +41,10 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class SignUpSerializer(UserSerializer):
+    """
+    Сериализатор для регистрации и получения кода потдверждения.
+    Поля email и username обязательны.
+    """
 
     class Meta:
         fields = ['email', 'username']
@@ -41,21 +52,31 @@ class SignUpSerializer(UserSerializer):
 
 
 class UserProfileSerializer(UserSerializer):
+    """
+    Сериализатор для получения и изменения данных
+    собственной учётной записи.
+    Пользователь может узнать свою роль в системе, но не может её изменять.
+    """
 
     class Meta(UserSerializer.Meta):
         read_only_fields = ['role']
 
 
 class MyTokenObtainSerializer(TokenObtainSerializer):
+    """
+    Сериализатор для получения JWT.
+    Поля username и confirmation_code обязательны.
+    Валидация:
+    1) username должен соответсвовать шаблону: буквы, цифры и знаки @./+/-/_;
+    2) проверка существования пользователя с полученным username;
+    3) проверка переданного кода подтверждения для этого пользователя.
+    """
     token_class = AccessToken
     username = serializers.RegexField(regex=r'^[\w.@+-]+$', max_length=150)
     confirmation_code = serializers.CharField()
 
     def __init__(self, *args, **kwargs):
         serializers.Serializer.__init__(self, *args, **kwargs)
-
-        self.fields['username'] = serializers.CharField(max_length=150)
-        self.fields['confirmation_code'] = serializers.CharField()
 
     def validate(self, data):
         try:

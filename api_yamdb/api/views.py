@@ -24,6 +24,9 @@ User = get_user_model()
 
 
 def send_confirmation_code(user, confirmation_code):
+    """
+    Функция отправляет код подтверждения на электронную почту пользователя.
+    """
     subject = "You're signed up on YaMDB!"
     message = (f'Hello, {user.username}!\n'
                'Your confirmation code to receive a token is: '
@@ -36,6 +39,11 @@ def send_confirmation_code(user, confirmation_code):
 
 
 class SignUpView(generics.CreateAPIView):
+    """
+    Вью-класс для самостоятельной регистрации нового пользователя
+    и для получения кода подтверждения для пользователя,
+    зарегистрированного админом.
+    """
     queryset = User.objects.all()
     serializer_class = SignUpSerializer
     permission_classes = [AllowAny]
@@ -61,11 +69,17 @@ class SignUpView(generics.CreateAPIView):
 
 
 class TokenObtainView(TokenObtainPairView):
+    """
+    Вьюсет для получения JWT.
+    """
     serializer_class = MyTokenObtainSerializer
     permission_classes = [AllowAny]
 
 
 class UsersViewSet(viewsets.ModelViewSet):
+    """
+    Вьюсет модели User. Метод PUT недоступен.
+    """
     queryset = User.objects.all().order_by('username')
     serializer_class = UserSerializer
     lookup_field = 'username'
@@ -73,7 +87,6 @@ class UsersViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
-    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_instance(self):
         return self.request.user
@@ -90,6 +103,11 @@ class UsersViewSet(viewsets.ModelViewSet):
         if request.method == "GET":
             return self.retrieve(request)
         return self.partial_update(request)
+
+    def update(self, request, *args, **kwargs):
+        if request.method == "PUT":
+            return self.http_method_not_allowed(request, *args, **kwargs)
+        return super().update(request, *args, **kwargs)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
