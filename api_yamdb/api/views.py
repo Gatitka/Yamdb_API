@@ -190,9 +190,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         return Comment.objects.filter(
             review__title=title.id,
             review=review.id
-            ).all()
+        ).all()
 
     def perform_create(self, serializer):
-        title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
         review = get_object_or_404(Review, pk=self.kwargs.get("review_id"))
         serializer.save(review=review, author=self.request.user)
