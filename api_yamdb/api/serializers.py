@@ -34,6 +34,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
 
     def validate_username(self, value):
+        print("Валидация username == 'me'")
         if value.lower() == 'me':
             raise serializers.ValidationError(
                 "Использовать 'me' в качестве username запрещено.")
@@ -44,11 +45,30 @@ class SignUpSerializer(UserSerializer):
     """
     Сериализатор для регистрации и получения кода потдверждения.
     Поля email и username обязательны.
+    Валидация:
+    - Если пользователь уже существует, данные считаются валидными;
+    - Если в БД есть пользователи с переданными email или username,
+    вызывается ошибка.
     """
+    email = serializers.EmailField(max_length=254, required=True)
+    username = serializers.RegexField(regex=r'^[\w.@+-]+$', max_length=150)
 
     class Meta:
         fields = ['email', 'username']
         model = User
+
+    def validate(self, data):
+        username = data['username']
+        email = data['email']
+        if User.objects.filter(username=username, email=email).exists():
+            return data
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError(
+                "Пользователь с таким username уже существует.")
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError(
+                "Пользователь с таким email уже существует.")
+        return data
 
 
 class UserProfileSerializer(UserSerializer):

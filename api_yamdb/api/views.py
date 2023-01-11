@@ -12,7 +12,6 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from reviews.models import Category, Comment, Genre, Review, Title
 
 from .filters import TitleFilter
-
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
                           IsAuthorAdminModerOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
@@ -51,22 +50,17 @@ class SignUpView(generics.CreateAPIView):
 
     def create(self, request):
         serializer = self.get_serializer(data=request.data)
-        user = None
-        if not serializer.is_valid():
-            try:
-                user = User.objects.get(
-                    username__iexact=serializer.initial_data.get('username'),
-                    email__iexact=serializer.initial_data.get('email')
-                )
-            except User.DoesNotExist:
-                return Response(
-                    serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        if not user:
-            user = serializer.save()
-        confirmation_code = default_token_generator.make_token(user=user)
-        send_confirmation_code(user, confirmation_code)
+        if serializer.is_valid():
+            user, created = User.objects.get_or_create(
+                username=serializer.validated_data['username'],
+                email=serializer.validated_data['email']
+            )
+            confirmation_code = default_token_generator.make_token(user=user)
+            send_confirmation_code(user, confirmation_code)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TokenObtainView(TokenObtainPairView):
