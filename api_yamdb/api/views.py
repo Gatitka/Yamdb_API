@@ -3,7 +3,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, generics, mixins, status, viewsets
+from rest_framework import filters, mixins, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -38,18 +38,16 @@ def send_confirmation_code(user, confirmation_code):
     send_mail(subject, message, from_email, recepient_list)
 
 
-class SignUpView(generics.CreateAPIView):
+class SignUpView(views.APIView):
     """
     Вью-класс для самостоятельной регистрации нового пользователя
     и для получения кода подтверждения для пользователя,
     зарегистрированного админом.
     """
-    queryset = User.objects.all()
-    serializer_class = SignUpSerializer
     permission_classes = [AllowAny]
 
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
+    def post(self, request):
+        serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
             user, created = User.objects.get_or_create(
                 username=serializer.validated_data['username'],
