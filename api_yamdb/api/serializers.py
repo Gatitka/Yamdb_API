@@ -5,7 +5,6 @@ from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework.exceptions import NotFound
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
 from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
@@ -34,10 +33,10 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
 
     def validate_username(self, value):
-        print("Валидация username == 'me'")
         if value.lower() == 'me':
             raise serializers.ValidationError(
-                "Использовать 'me' в качестве username запрещено.")
+                "Использовать 'me' в качестве username запрещено."
+            )
         return value
 
 
@@ -64,10 +63,12 @@ class SignUpSerializer(UserSerializer):
             return data
         if User.objects.filter(username=username).exists():
             raise serializers.ValidationError(
-                "Пользователь с таким username уже существует.")
+                "Пользователь с таким username уже существует."
+            )
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError(
-                "Пользователь с таким email уже существует.")
+                "Пользователь с таким email уже существует."
+            )
         return data
 
 
@@ -99,18 +100,15 @@ class MyTokenObtainSerializer(TokenObtainSerializer):
         serializers.Serializer.__init__(self, *args, **kwargs)
 
     def validate(self, data):
-        try:
-            self.user = User.objects.get(username=data['username'])
-        except User.DoesNotExist:
-            raise NotFound("Пользователя с таким username не существует.")
-
+        self.user = get_object_or_404(User, username=data['username'])
         confirmation_code = data['confirmation_code']
         if not default_token_generator.check_token(
             user=self.user,
             token=confirmation_code
         ):
             raise serializers.ValidationError(
-                "Недействительный код подтверждения.")
+                "Недействительный код подтверждения."
+            )
 
         data = {"token": str(self.get_token(self.user))}
 

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -12,13 +13,24 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from reviews.models import Category, Comment, Genre, Review, Title
 
 from .filters import TitleFilter
-from .permissions import (IsAdmin, IsAdminOrReadOnly,
-                          IsAuthorAdminModerOrReadOnly)
-from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, MyTokenObtainSerializer,
-                          ReviewSerializer, SignUpSerializer, TitleSerializer,
-                          UserProfileSerializer, UserSerializer,
-                          WriteReviewSerializer, WriteTitleSerializer)
+from .permissions import (
+    IsAdmin,
+    IsAdminOrReadOnly,
+    IsAuthorAdminModerOrReadOnly
+)
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSerializer,
+    MyTokenObtainSerializer,
+    ReviewSerializer,
+    SignUpSerializer,
+    TitleSerializer,
+    UserProfileSerializer,
+    UserSerializer,
+    WriteReviewSerializer,
+    WriteTitleSerializer
+)
 
 User = get_user_model()
 
@@ -28,12 +40,13 @@ def send_confirmation_code(user, confirmation_code):
     Функция отправляет код подтверждения на электронную почту пользователя.
     """
     subject = "You're signed up on YaMDB!"
-    message = (f'Hello, {user.username}!\n'
-               'Your confirmation code to receive a token is: '
-               f'{confirmation_code}\n'
-               'Note: code will expire in 1 day.')
-    from_email = 'hello@yamdb.ru'
-    recepient_list = [user.email, ]
+    message = """
+        Hello, {0}!
+        Your confirmation code to receive a token is: {1}
+        Note: it will expire in 1 day.
+    """.format(user.username, confirmation_code)
+    from_email = 'hello@' + settings.DOMAIN_NAME
+    recepient_list = [user.email]
 
     send_mail(subject, message, from_email, recepient_list)
 
@@ -48,17 +61,15 @@ class SignUpView(views.APIView):
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
-        if serializer.is_valid():
-            user, created = User.objects.get_or_create(
-                username=serializer.validated_data['username'],
-                email=serializer.validated_data['email']
-            )
-            confirmation_code = default_token_generator.make_token(user=user)
-            send_confirmation_code(user, confirmation_code)
+        serializer.is_valid(raise_exception=True)
+        user, created = User.objects.get_or_create(
+            username=serializer.validated_data['username'],
+            email=serializer.validated_data['email']
+        )
+        confirmation_code = default_token_generator.make_token(user=user)
+        send_confirmation_code(user, confirmation_code)
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TokenObtainView(TokenObtainPairView):
@@ -73,7 +84,7 @@ class UsersViewSet(viewsets.ModelViewSet):
     """
     Вьюсет модели User. Метод PUT недоступен.
     """
-    queryset = User.objects.all().order_by('username')
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = 'username'
     permission_classes = [IsAdmin]
