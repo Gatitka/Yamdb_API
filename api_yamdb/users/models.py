@@ -20,3 +20,9 @@ class User(AbstractUser):
         choices=UserRoles.choices,
         default=UserRoles.USER
     )
+
+    def is_admin(self):
+        return self.role == 'admin' or self.is_superuser
+
+    def is_moderator(self):
+        return self.role == 'moderator'
