@@ -56,48 +56,48 @@ python3 manage.py runserver
 ```
 
 ### Регистрация и получение токена:bust_in_silhouette::key:
-- Чтобы зарегистрировать пользователя, отправьте POST-запрос с полями "username" и "email" на "http://127.0.0.1:8000/api/v1/auth/signup/"
+- Чтобы зарегистрировать пользователя, отправьте POST-запрос с полями "username" и "email" на "/api/v1/auth/signup/"
 - На указанный адрес электронной почты придёт письмо с кодом подтверждения. Код действителен только один день, для получения нового кода, повторно отправьте запрос с данными пользователя.
-- Получить токен для пользователя можно отправив POST-запрос на "http://127.0.0.1:8000/api/v1/auth/token/", указав "username" и "confirmation_code" — код подверждения, полученный на почту.
+- Получить токен для пользователя можно отправив POST-запрос на "/api/v1/auth/token/", указав "username" и "confirmation_code" — код подверждения, полученный на почту.
 
 ### URLS:vertical_traffic_light:
 - **"v1/auth/signup":**
-"http://127.0.0.1:8000/api/v1/auth/signup/"
+"/api/v1/auth/signup/"
 Регистрация пользователя/ отправка кода подтверждения на почту.
 
 - **"v1/auth/token":**
-"http://127.0.0.1:8000/api/v1/auth/token/"
+"/api/v1/auth/token/"
 Получение JWT для аутентификации на ресурсах YaMDB.
 
 - **"v1/users/me":**
-"http://127.0.0.1:8000/api/v1/users/me/"
+"/api/v1/users/me/"
 Получение или изменение данных своей учётной записи.
 
 - **"v1/users":**
-"http://127.0.0.1:8000/api/v1/users/"
+"/api/v1/users/"
 Список всех пользователей и добавление нового пользователя.
 
 - **"v1/users/{username}:**
-"http://127.0.0.1:8000/api/v1/users/{username}/"
+"/api/v1/users/{username}/"
 Получение конкретного пользователя, изменение его данных или удаление.
 
 - **"v1/titles":**
-"http://127.0.0.1:8000/api/v1/titles/"
+"/api/v1/titles/"
 Список произведений, к которым пишут отзывы.
 
 - **"v1/categories":**
-"http://127.0.0.1:8000/api/v1/categories/",
+"/api/v1/categories/",
 список категорий (типов) произведений.
 
 - **"v1/genres":**
-"http://127.0.0.1:8000/api/v1/genres/",
+"/api/v1/genres/",
 список жанров
 
 - **"'v1/titles/(<title_id>)/reviews/:**
-"http://127.0.0.1:8000/api/v1/titles/(<title_id>)/reviews/"
+"/api/v1/titles/(<title_id>)/reviews/"
 просмотр, создание, редакция отзывов к произведениям
 
-- **"'v1/titles/(<title_id>)/reviews/(<reviews_id>)/comments/:** "http://127.0.0.1:8000/api/v1/titles/(<title_id>)/reviews/(<review_id>)/comments/"
+- **"'v1/titles/(<title_id>)/reviews/(<reviews_id>)/comments/:** "/api/v1/titles/(<title_id>)/reviews/(<review_id>)/comments/"
 просмотр, создание, редакция комментов к отзывам
 
 
