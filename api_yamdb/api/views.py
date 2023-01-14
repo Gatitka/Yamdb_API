@@ -10,7 +10,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
-from reviews.models import Category, Genre, Review, Title, Comment
+from reviews.models import Category, Genre, Review, Title
 
 from .filters import TitleFilter
 from .permissions import (IsAdmin, IsAdminOrReadOnly,

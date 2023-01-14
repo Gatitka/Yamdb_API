@@ -2,7 +2,6 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 from rest_framework_simplejwt.serializers import TokenObtainSerializer

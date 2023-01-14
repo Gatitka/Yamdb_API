@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-from reviews.validators import validate_year, validate_score
+from reviews.validators import validate_score, validate_year
 
 User = get_user_model()
 
