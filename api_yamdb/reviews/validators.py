@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 
 
 def validate_year(value):
+    """ Валидация года создания произведения."""
     year = value
     if year:
         if year > datetime.datetime.now().year:
@@ -22,6 +23,7 @@ def validate_year(value):
 
 
 def validate_score(value):
+    """ Валидация оценки произведения в отзыве."""
     score = value
     if not (0 < score <= 10):
         raise ValidationError('Оцените от 1 до 10.')

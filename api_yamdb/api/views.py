@@ -160,9 +160,7 @@ class GenreCreateDestroyListViewSet(mixins.CreateModelMixin,
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    """ Вьюсет модели Review. Сериализатор подбирается по типу запроса для
-    валидации 1aвтop-1пpoизведение-1отзыв при создании. B других экшенах
-    этой валидации нет."""
+    """ Вьюсет модели Review."""
     permission_classes = [IsAuthorAdminModerOrReadOnly]
     serializer_class = ReviewSerializer
 
