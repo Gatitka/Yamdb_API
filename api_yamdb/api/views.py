@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, generics, mixins, status, viewsets
@@ -9,17 +10,16 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
-from reviews.models import Category, Comment, Genre, Review, Title
+from reviews.models import Category, Genre, Review, Title, Comment
 
 from .filters import TitleFilter
-
 from .permissions import (IsAdmin, IsAdminOrReadOnly,
                           IsAuthorAdminModerOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, MyTokenObtainSerializer,
                           ReviewSerializer, SignUpSerializer, TitleSerializer,
                           UserProfileSerializer, UserSerializer,
-                          WriteReviewSerializer, WriteTitleSerializer)
+                          WriteTitleSerializer)
 
 User = get_user_model()
 
@@ -113,7 +113,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
 class TitleViewSet(viewsets.ModelViewSet):
     """ Вьюсет модели Title, сериализатор подбирается по типу запроса."""
-    queryset = Title.objects.all()
+    queryset = Title.objects.annotate(rating=Avg('reviews__score'))
     permission_classes = [IsAdminOrReadOnly]
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend, )
@@ -161,18 +161,14 @@ class GenreCreateDestroyListViewSet(mixins.CreateModelMixin,
 
 class ReviewViewSet(viewsets.ModelViewSet):
     """ Вьюсет модели Review. Сериализатор подбирается по типу запроса для
-    валидации 1автор-1произведение-1отзыв при создании. В других экшенах
+    валидации 1aвтop-1пpoизведение-1отзыв при создании. B других экшенах
     этой валидации нет."""
     permission_classes = [IsAuthorAdminModerOrReadOnly]
+    serializer_class = ReviewSerializer
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
         return title.reviews.all()
-
-    def get_serializer_class(self):
-        if self.action in ['create']:
-            return WriteReviewSerializer
-        return ReviewSerializer
 
     def perform_create(self, serializer):
         title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
@@ -185,12 +181,13 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthorAdminModerOrReadOnly]
 
     def get_queryset(self):
-        title = get_object_or_404(Title, pk=self.kwargs.get("title_id"))
-        review = get_object_or_404(Review, pk=self.kwargs.get("review_id"))
-        return Comment.objects.filter(
-            review__title=title.id,
-            review=review.id
-        ).all()
+        title_id = self.kwargs.get("title_id")
+        review = get_object_or_404(
+            Review,
+            pk=self.kwargs.get("review_id"),
+            title=title_id
+        )
+        return review.comments.all()
 
     def perform_create(self, serializer):
         review = get_object_or_404(Review, pk=self.kwargs.get("review_id"))
