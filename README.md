@@ -77,8 +77,8 @@ python3 manage.py runserver
 "/api/v1/users/"
 Список всех пользователей и добавление нового пользователя.
 
-- **"v1/users/{username}:**
-"/api/v1/users/{username}/"
+- **"v1/users/(<username>):**
+"/api/v1/users/(<username>)/"
 Получение конкретного пользователя, изменение его данных или удаление.
 
 - **"v1/titles":**

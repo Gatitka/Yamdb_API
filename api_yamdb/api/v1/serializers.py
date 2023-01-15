@@ -2,6 +2,7 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
 from rest_framework_simplejwt.tokens import AccessToken
@@ -20,14 +21,8 @@ class UserSerializer(serializers.ModelSerializer):
     """
 
     class Meta:
-        fields = [
-            'username',
-            'email',
-            'first_name',
-            'last_name',
-            'bio',
-            'role'
-        ]
+        fields = ('username', 'email', 'first_name',
+                  'last_name', 'bio', 'role')
         model = User
 
     def validate_username(self, value):
@@ -51,7 +46,7 @@ class SignUpSerializer(UserSerializer):
     username = serializers.RegexField(regex=r'^[\w.@+-]+$', max_length=150)
 
     class Meta:
-        fields = ['email', 'username']
+        fields = ('email', 'username')
         model = User
 
     def validate(self, data):
@@ -78,7 +73,7 @@ class UserProfileSerializer(UserSerializer):
     """
 
     class Meta(UserSerializer.Meta):
-        read_only_fields = ['role']
+        read_only_fields = ('role',)
 
 
 class MyTokenObtainSerializer(TokenObtainSerializer):
@@ -116,14 +111,14 @@ class MyTokenObtainSerializer(TokenObtainSerializer):
 class GenreSerializer(serializers.ModelSerializer):
     """ Сериалайзер жанра."""
     class Meta:
-        fields = ['name', 'slug']
+        fields = ('name', 'slug')
         model = Genre
 
 
 class CategorySerializer(serializers.ModelSerializer):
     """ Сериалайзер категории."""
     class Meta:
-        fields = ['name', 'slug']
+        fields = ('name', 'slug')
         model = Category
 
 
