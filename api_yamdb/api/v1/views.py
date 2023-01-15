@@ -1,10 +1,11 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, generics, mixins, status, viewsets
+from rest_framework import filters, mixins, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -13,13 +14,23 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from reviews.models import Category, Genre, Review, Title
 
 from .filters import TitleFilter
-from .permissions import (IsAdmin, IsAdminOrReadOnly,
-                          IsAuthorAdminModerOrReadOnly)
-from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, MyTokenObtainSerializer,
-                          ReviewSerializer, SignUpSerializer, TitleSerializer,
-                          UserProfileSerializer, UserSerializer,
-                          WriteTitleSerializer)
+from .permissions import (
+    IsAdmin,
+    IsAdminOrReadOnly,
+    IsAuthorAdminModerOrReadOnly
+)
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSerializer,
+    MyTokenObtainSerializer,
+    ReviewSerializer,
+    SignUpSerializer,
+    TitleSerializer,
+    UserProfileSerializer,
+    UserSerializer,
+    WriteTitleSerializer
+)
 
 User = get_user_model()
 
@@ -29,40 +40,32 @@ def send_confirmation_code(user, confirmation_code):
     Функция отправляет код подтверждения на электронную почту пользователя.
     """
     subject = "You're signed up on YaMDB!"
-    message = (f'Hello, {user.username}!\n'
-               'Your confirmation code to receive a token is: '
-               f'{confirmation_code}\n'
-               'Note: code will expire in 1 day.')
-    from_email = 'hello@yamdb.ru'
-    recepient_list = [user.email, ]
+    message = """
+        Hello, {0}!
+        Your confirmation code to receive a token is: {1}
+        Note: it will expire in 1 day.
+    """.format(user.username, confirmation_code)
+    from_email = 'hello@' + settings.DOMAIN_NAME
+    recepient_list = [user.email]
 
     send_mail(subject, message, from_email, recepient_list)
 
 
-class SignUpView(generics.CreateAPIView):
+class SignUpView(views.APIView):
     """
     Вью-класс для самостоятельной регистрации нового пользователя
     и для получения кода подтверждения для пользователя,
     зарегистрированного админом.
     """
-    queryset = User.objects.all()
-    serializer_class = SignUpSerializer
     permission_classes = [AllowAny]
 
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-        user = None
-        if not serializer.is_valid():
-            try:
-                user = User.objects.get(
-                    username__iexact=serializer.initial_data.get('username'),
-                    email__iexact=serializer.initial_data.get('email')
-                )
-            except User.DoesNotExist:
-                return Response(
-                    serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        if not user:
-            user = serializer.save()
+    def post(self, request):
+        serializer = SignUpSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user, created = User.objects.get_or_create(
+            username=serializer.validated_data['username'],
+            email=serializer.validated_data['email']
+        )
         confirmation_code = default_token_generator.make_token(user=user)
         send_confirmation_code(user, confirmation_code)
 
@@ -81,7 +84,7 @@ class UsersViewSet(viewsets.ModelViewSet):
     """
     Вьюсет модели User. Метод PUT недоступен.
     """
-    queryset = User.objects.all().order_by('username')
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     lookup_field = 'username'
     permission_classes = [IsAdmin]
@@ -116,7 +119,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(rating=Avg('reviews__score'))
     permission_classes = [IsAdminOrReadOnly]
     pagination_class = PageNumberPagination
-    filter_backends = (DjangoFilterBackend, )
+    filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
 
     def get_serializer_class(self):

@@ -41,7 +41,7 @@ class Title(models.Model):
         db_index=True,
         verbose_name='Название'
     )
-    year = models.SmallIntegerField(
+    year = models.PositiveSmallIntegerField(
         validators=[validate_year],
         verbose_name='Год',
         db_index=True
@@ -113,8 +113,9 @@ class Review(models.Model):
     pub_date = models.DateTimeField(
         verbose_name='Дата добавления',
         auto_now_add=True,
-        db_index=True)
-    score = models.IntegerField(
+        db_index=True
+    )
+    score = models.PositiveSmallIntegerField(
         validators=[validate_score],
         verbose_name='Оценка'
     )
@@ -126,7 +127,7 @@ class Review(models.Model):
                 name='unique_author_title'
             )
         ]
-        ordering = ['-pub_date', ]
+        ordering = ['-pub_date']
         verbose_name = 'отзыв'
         verbose_name_plural = 'отзывы'
 
@@ -153,6 +154,6 @@ class Comment(models.Model):
     )
 
     class Meta:
-        ordering = ['-pub_date', ]
+        ordering = ['-pub_date']
         verbose_name = 'комментарий'
         verbose_name_plural = 'комментарии'

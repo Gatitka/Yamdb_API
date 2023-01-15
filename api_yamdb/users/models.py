@@ -9,7 +9,11 @@ class UserRoles(models.TextChoices):
 
 
 class User(AbstractUser):
-    email = models.EmailField(max_length=254, unique=True)
+    email = models.EmailField(
+        'Email',
+        max_length=254,
+        unique=True
+    )
     bio = models.TextField(
         'О себе',
         blank=True
@@ -22,5 +26,12 @@ class User(AbstractUser):
     )
 
     class Meta:
+        ordering = ['username']
         verbose_name = 'пользователь'
         verbose_name_plural = 'пользователи'
+
+    def is_admin(self):
+        return self.role == 'admin' or self.is_superuser
+
+    def is_moderator(self):
+        return self.role == 'moderator'
