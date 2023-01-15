@@ -21,6 +21,10 @@ class User(AbstractUser):
         default=UserRoles.USER
     )
 
+    class Meta:
+        verbose_name = 'пользователь'
+        verbose_name_plural = 'пользователи'
+
     def is_admin(self):
         return self.role == 'admin' or self.is_superuser
 
