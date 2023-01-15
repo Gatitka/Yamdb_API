@@ -20,3 +20,7 @@ class User(AbstractUser):
         choices=UserRoles.choices,
         default=UserRoles.USER
     )
+
+    class Meta:
+        verbose_name = 'пользователь'
+        verbose_name_plural = 'пользователи'

@@ -2,13 +2,11 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from django.db.models import Avg
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
 from rest_framework_simplejwt.tokens import AccessToken
-from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
+from reviews.models import Category, Comment, Genre, Review, Title
 
 User = get_user_model()
 
@@ -113,22 +111,14 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class TitleSerializer(serializers.ModelSerializer):
     """ Сериалайзер произведения для чтения, вкл создание поля рейтинга."""
-    genre = GenreSerializer(many=True)
-    category = CategorySerializer()
-    rating = serializers.SerializerMethodField()
+    genre = GenreSerializer(many=True, read_only=True)
+    category = CategorySerializer(read_only=True)
+    rating = serializers.IntegerField(read_only=True)
 
     class Meta:
         fields = ('id', 'name', 'year', 'rating',
                   'description', 'genre', 'category')
         model = Title
-
-    def get_rating(self, obj):
-        if Review.objects.filter(title=obj.id).exists():
-            avg_score = Review.objects.filter(
-                title=obj.id
-            ).aggregate(Avg('score'))['score__avg']
-            return round(avg_score)
-        return None
 
 
 class WriteTitleSerializer(TitleSerializer):
@@ -152,27 +142,14 @@ class WriteTitleSerializer(TitleSerializer):
         if year:
             if year > datetime.datetime.now().year:
                 raise serializers.ValidationError(
-                    'Дата публикации не может быть в будущем')
+                    'Дата публикации не может быть в будущем'
+                )
             if year < 1895:
                 raise serializers.ValidationError(
                     'Дата публикации не может быть '
-                    'раньше появления кинематографа')
+                    'раньше появления кинематографа'
+                )
         return attrs
-
-    def validate_category(self, value):
-        if not value:
-            raise serializers.ValidationError(
-                'Поле категории не может быть пустым')
-        return value
-
-    def create(self, validated_data):
-        genres = validated_data.pop('genre')
-        title = Title.objects.create(**validated_data)
-        for genre in genres:
-            genre = get_object_or_404(Genre, slug=genre)
-            GenreTitle.objects.create(
-                genre=genre, title=title)
-        return title
 
     def to_representation(self, value):
         serializer = TitleSerializer(value)
@@ -181,8 +158,8 @@ class WriteTitleSerializer(TitleSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     """ Сериализатор для чтения и редакции отзывов.
-    (НЕТ Валидации: 1 отзыв на 1 произведение)
-    Валидация оценки произведению 0-10."""
+    Валидация: 1 отзыв 1 автора на 1 произведение.
+    Валидация: оценки произведению 0-10."""
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         slug_field='username',
@@ -198,18 +175,14 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Оцените от 1 до 10.')
         return value
 
-
-class WriteReviewSerializer(ReviewSerializer):
-    """ Сериализатор для сохдания отзывов.
-    Валидация 1 отзыв на 1 произведение.
-    Валидация оценки произведению 0-10"""
-
     def validate(self, data):
-        request = self.root.context['request']
+        request = self.context['request']
+        if request.method == 'PATCH':
+            return data
         kwargs = request.parser_context['kwargs']
         title_id = kwargs['title_id']
 
-        if Review.objects.filter(author=request.user, title=title_id):
+        if Review.objects.filter(author=request.user, title=title_id).exists():
             raise serializers.ValidationError(
                 'Пользователь может добавить лишь один отзыв на произведение.'
             )
