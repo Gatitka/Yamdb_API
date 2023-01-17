@@ -21,8 +21,14 @@ class UserSerializer(serializers.ModelSerializer):
     """
 
     class Meta:
-        fields = ('username', 'email', 'first_name',
-                  'last_name', 'bio', 'role')
+        fields = (
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'role'
+        )
         model = User
 
     def validate_username(self, value):
@@ -129,8 +135,15 @@ class TitleSerializer(serializers.ModelSerializer):
     rating = serializers.IntegerField(read_only=True)
 
     class Meta:
-        fields = ('id', 'name', 'year', 'rating',
-                  'description', 'genre', 'category')
+        fields = (
+            'id',
+            'name',
+            'year',
+            'rating',
+            'description',
+            'genre',
+            'category'
+        )
         model = Title
 
 
@@ -178,15 +191,11 @@ class ReviewSerializer(serializers.ModelSerializer):
         slug_field='username',
         read_only=True
     )
+    score = serializers.IntegerField(max_value=10, min_value=0)
 
     class Meta:
         fields = ('id', 'text', 'author', 'pub_date', 'score')
         model = Review
-
-    def validate_score(self, value):
-        if not (0 < value <= 10):
-            raise serializers.ValidationError('Оцените от 1 до 10.')
-        return value
 
     def validate(self, data):
         request = self.context['request']

@@ -1,11 +1,9 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, status, views, viewsets
+from rest_framework import filters, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -13,12 +11,14 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from reviews.models import Category, Genre, Review, Title
 
+from ..mixins import CreateDestroyListModelMixin
 from .filters import TitleFilter
 from .permissions import (
     IsAdmin,
     IsAdminOrReadOnly,
     IsAuthorAdminModerOrReadOnly
 )
+from .send_email import send_confirmation_code
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
@@ -33,22 +33,6 @@ from .serializers import (
 )
 
 User = get_user_model()
-
-
-def send_confirmation_code(user, confirmation_code):
-    """
-    Функция отправляет код подтверждения на электронную почту пользователя.
-    """
-    subject = "You're signed up on YaMDB!"
-    message = """
-        Hello, {0}!
-        Your confirmation code to receive a token is: {1}
-        Note: it will expire in 1 day.
-    """.format(user.username, confirmation_code)
-    from_email = 'hello@' + settings.DOMAIN_NAME
-    recepient_list = [user.email]
-
-    send_mail(subject, message, from_email, recepient_list)
 
 
 class SignUpView(views.APIView):
@@ -128,9 +112,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         return WriteTitleSerializer
 
 
-class CategoryCreateDestroyListViewSet(mixins.CreateModelMixin,
-                                       mixins.DestroyModelMixin,
-                                       mixins.ListModelMixin,
+class CategoryCreateDestroyListViewSet(CreateDestroyListModelMixin,
                                        viewsets.GenericViewSet):
     """ Вьюсет модели Category."""
     queryset = Category.objects.all()
@@ -141,13 +123,8 @@ class CategoryCreateDestroyListViewSet(mixins.CreateModelMixin,
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     search_fields = ('name',)
 
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
 
-
-class GenreCreateDestroyListViewSet(mixins.CreateModelMixin,
-                                    mixins.DestroyModelMixin,
-                                    mixins.ListModelMixin,
+class GenreCreateDestroyListViewSet(CreateDestroyListModelMixin,
                                     viewsets.GenericViewSet):
     """ Вьюсет модели Genre."""
     queryset = Genre.objects.all()
@@ -157,9 +134,6 @@ class GenreCreateDestroyListViewSet(mixins.CreateModelMixin,
     pagination_class = PageNumberPagination
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     search_fields = ('name',)
-
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -186,7 +160,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         review = get_object_or_404(
             Review,
             pk=self.kwargs.get("review_id"),
-            title=title_id
+            title_id=title_id
         )
         return review.comments.all()
 
