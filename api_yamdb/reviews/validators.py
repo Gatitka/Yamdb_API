@@ -1,13 +1,12 @@
-import datetime
-
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 
 def validate_year(value):
     """ Валидация года создания произведения."""
     year = value
     if year:
-        if year > datetime.datetime.now().year:
+        if year > timezone.now().year:
             raise ValidationError(
                 'Дата публикации не может быть в будущем'
             )

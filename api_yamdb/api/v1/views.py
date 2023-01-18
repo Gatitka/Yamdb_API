@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from reviews.models import Category, Genre, Review, Title
 
-from ..mixins import CreateDestroyListModelMixin
+from ..viewsets import CreateDestroyListModelViewSet
 from .filters import TitleFilter
 from .permissions import (
     IsAdmin,
@@ -112,8 +112,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         return WriteTitleSerializer
 
 
-class CategoryCreateDestroyListViewSet(CreateDestroyListModelMixin,
-                                       viewsets.GenericViewSet):
+class CategoryViewSet(CreateDestroyListModelViewSet):
     """ Вьюсет модели Category."""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -124,8 +123,7 @@ class CategoryCreateDestroyListViewSet(CreateDestroyListModelMixin,
     search_fields = ('name',)
 
 
-class GenreCreateDestroyListViewSet(CreateDestroyListModelMixin,
-                                    viewsets.GenericViewSet):
+class GenreViewSet(CreateDestroyListModelViewSet):
     """ Вьюсет модели Genre."""
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer

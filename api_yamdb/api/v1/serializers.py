@@ -1,8 +1,7 @@
-import datetime
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainSerializer
 from rest_framework_simplejwt.tokens import AccessToken
@@ -163,19 +162,17 @@ class WriteTitleSerializer(TitleSerializer):
         slug_field='slug'
     )
 
-    def validate(self, attrs):
-        year = attrs.get('year')
-        if year:
-            if year > datetime.datetime.now().year:
-                raise serializers.ValidationError(
-                    'Дата публикации не может быть в будущем'
-                )
-            if year < 1895:
-                raise serializers.ValidationError(
-                    'Дата публикации не может быть '
-                    'раньше появления кинематографа'
-                )
-        return attrs
+    def validate_year(self, value):
+        if value > timezone.now().year:
+            raise serializers.ValidationError(
+                'Дата публикации не может быть в будущем'
+            )
+        if value < 1895:
+            raise serializers.ValidationError(
+                'Дата публикации не может быть '
+                'раньше появления кинематографа'
+            )
+        return value
 
     def to_representation(self, value):
         serializer = TitleSerializer(value)
